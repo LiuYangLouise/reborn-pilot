@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<title>Reborn提优，just join in！</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="teacher-panel.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+    font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+    background: #1A1A1A;
+    color: #FFFFFF;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+body.light-mode { background: #FFFFFF; color: #1A1A1A; }
+
+/* ===== 密码锁屏 ===== */
+#lockScreen {
+    position: fixed; inset: 0;
+    background: #1A1A1A;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem 1.5rem;
+    z-index: 99999;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+#lockScreen.hide { opacity: 0; transform: translateY(-30px); pointer-events: none; }
+.lock-hex-row { position: relative; width: 80px; height: 90px; margin-bottom: 24px; }
+.lock-hex-row div {
+    position: absolute; width: 60px; height: 70px;
+    border: 2px solid #fff; border-radius: 2px;
+    animation: hexAppear 3.5s ease-in-out infinite;
+}
+.lock-hex-row div:nth-child(1) { top: 0; left: 10px; }
+.lock-hex-row div:nth-child(2) { top: 10px; left: 45px; transform: scale(0.85); }
+.lock-hex-row div:nth-child(3) { top: 10px; left: -25px; transform: scale(0.85); }
+.lock-hex-row div:nth-child(4) { top: 40px; left: 28px; transform: scale(0.7); }
+.lock-hex-row div:nth-child(5) { top: 40px; left: -8px; transform: scale(0.7); }
+@keyframes hexAppear {
+    0%{opacity:0;transform:scale(.8) rotate(10deg);}
+    20%{opacity:1;transform:scale(1) rotate(0);}
+    80%{opacity:1;transform:scale(1) rotate(0);}
+    100%{opacity:0;transform:scale(.8) rotate(-10deg);}
+}
+.lock-title { color: #fff; font-size: 1.7rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 4px; }
+.lock-sub { color: #999; font-size: 0.85rem; letter-spacing: 4px; margin-bottom: 32px; text-transform: uppercase; }
+.lock-card {
+    background: #262626; border: 1px solid #3a3a3a;
+    border-radius: 16px; padding: 28px 24px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+.lock-label { color: #ccc; font-size: 0.95rem; text-align: center; margin-bottom: 14px; }
+.lock-input {
+    width: 100%; padding: 14px 18px; font-size: 1.05rem;
+    background: #1A1A1A; border: 1px solid #3a3a3a;
+    border-radius: 12px; color: #fff; text-align: center;
+    letter-spacing: 3px; outline: none; font-family: inherit;
+}
+.lock-input:focus { border-color: #2E5938; }
+.lock-err { color: #ff6b6b; font-size: 0.85rem; height: 18px; margin-top: 10px; text-align: center; }
+
+/* 老师端入口：密码卡片下方的小字，低调不引人注意 */
+.lock-teacher-entry { margin-top: 14px; text-align: center; }
+.lock-teacher-entry a {
+    color: #5a6a60; font-size: 0.78rem; text-decoration: none;
+    border-bottom: 1px dotted #4a5a50; padding-bottom: 1px;
+    transition: color 0.15s;
+}
+.lock-teacher-entry a:hover { color: #8aa89a; }
+.lock-btn {
+    width: 100%; margin-top: 10px; padding: 14px;
+    background: #2E5938; color: #fff; border: none;
+    border-radius: 40px; font-size: 1rem; font-weight: 600;
+    letter-spacing: 2px; cursor: pointer; font-family: inherit;
+    transition: all 0.15s; box-shadow: 0 4px 0 #1f452b;
+}
+.lock-btn:hover { background: #3a6e4a; }
+
+/* ===== 主应用 ===== */
+#app { position: fixed; inset: 0; overflow: hidden; opacity: 0; transition: opacity 0.5s ease; }
+#app.ready { opacity: 1; }
+
+.page {
+    position: absolute; inset: 0;
+    overflow: hidden;
+    transform: translateX(100%);
+    transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+    will-change: transform;
+    background: #1A1A1A;
+    z-index: 1;
+}
+body.light-mode .page { background: #FFFFFF; }
+.page.active { transform: translateX(0); }
+.page.behind { transform: translateX(-30%); }
+.page iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #fff;
+}
+
+.theme-toggle-global {
+    position: fixed; top: 20px; right: 20px;
+    width: 60px; height: 30px;
+    background: #262626; border-radius: 15px;
+    cursor: pointer;
+    z-index: 2147483000;
+    transition: background 0.3s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    pointer-events: auto;
+}
+body.light-mode .theme-toggle-global { background: #E0E0E0; }
+.theme-toggle-global .dot {
+    position: absolute; top: 3px; left: 3px;
+    width: 24px; height: 24px; background: #fff;
+    border-radius: 50%; transition: all 0.3s;
+    pointer-events: none;
+}
+body.light-mode .theme-toggle-global .dot { left: 33px; background: #1A1A1A; }
+
+.nav-btn-overlay {
+    position: fixed;
+    top: 20px;
+    padding: 8px 18px;
+    background: rgba(38,38,38,0.95);
+    border: 1px solid #3a3a3a;
+    border-radius: 40px;
+    color: #fff;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    z-index: 2147483000;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(8px);
+    transition: background 0.15s;
+    white-space: nowrap;
+    pointer-events: auto;
+}
+body.light-mode .nav-btn-overlay {
+    background: rgba(255,255,255,0.95);
+    border-color: #E0E0E0;
+    color: #1A1A1A;
+}
+.nav-btn-overlay:hover { background: rgba(60,60,60,0.95); }
+body.light-mode .nav-btn-overlay:hover { background: #E5E5E5; }
+.nav-btn-overlay.show { display: inline-flex; }
+
+#navUser { right: 20px; background: rgba(46,89,56,0.95); border-color: #2E5938; cursor: pointer; }
+body.light-mode #navUser { background: rgba(46,89,56,0.12); border-color: #2E5938; color: #2E5938; }
+#navUser:hover { background: rgba(60,110,74,0.95); }
+body.light-mode #navUser:hover { background: rgba(46,89,56,0.2); }
+
+/* ===== 设置面板 ===== */
+#setOverlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 2147482000; display: none;
+    backdrop-filter: blur(3px);
+}
+#setOverlay.show { display: block; }
+#setPanel {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: min(400px, calc(100vw - 32px));
+    background: #1A1A1A; border: 1px solid #3a3a3a; border-radius: 20px;
+    padding: 22px 22px 18px; z-index: 2147482001; display: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+body.light-mode #setPanel { background: #FFFFFF; border-color: #E0E0E0; }
+#setPanel.show { display: block; }
+.set-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #333;
+}
+body.light-mode .set-head { border-bottom-color: #E8E8E8; }
+.set-head span { color: #fff; font-size: 1.05rem; font-weight: 700; letter-spacing: 1px; }
+body.light-mode .set-head span { color: #1A1A1A; }
+.set-head button {
+    background: transparent; border: none; color: #888; font-size: 1.1rem;
+    cursor: pointer; padding: 4px 8px; line-height: 1;
+}
+.set-head button:hover { color: #fff; }
+body.light-mode .set-head button:hover { color: #1A1A1A; }
+.set-row { margin-bottom: 16px; }
+.set-label { color: #999; font-size: 0.78rem; margin-bottom: 7px; letter-spacing: 1px; }
+body.light-mode .set-label { color: #666; }
+.set-cur {
+    color: #7fc79a; font-size: 1rem; font-weight: 700;
+    background: #222; border-radius: 10px; padding: 10px 14px;
+}
+body.light-mode .set-cur { background: #F0F5EC; }
+.set-inputs { display: flex; gap: 8px; }
+.set-inputs input {
+    flex: 1; min-width: 0; background: #222; border: 1px solid #3a3a3a;
+    border-radius: 10px; padding: 10px 13px; color: #fff;
+    font-size: 0.92rem; outline: none; font-family: inherit;
+}
+body.light-mode .set-inputs input { background: #F5F5F5; border-color: #DDD; color: #1A1A1A; }
+.set-inputs input:focus { border-color: #2E5938; }
+.set-inputs button {
+    background: #2E5938; color: #fff; border: none; border-radius: 10px;
+    padding: 10px 18px; font-size: 0.88rem; font-weight: 600;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.set-inputs button:hover { background: #3a6e4a; }
+.set-msg { min-height: 20px; font-size: 0.82rem; color: #888; margin-top: 4px; }
+.set-msg.ok { color: #7fc79a; }
+.set-msg.err { color: #ff6b6b; }
+
+#navBack { left: 20px; }
+#navBackLevel { left: 130px; }
+#navHome { right: 100px; }
+
+.home-content {
+    width: 100%; height: 100%;
+    display: flex; justify-content: center; align-items: center;
+    padding: 20px;
+}
+.home-container {
+    width: 100%; max-width: 800px; min-height: 600px;
+    background-color: #1A1A1A;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    padding: 40px; border-radius: 12px;
+    position: relative; overflow: hidden;
+    transition: all 0.3s ease;
+}
+body.light-mode .home-container {
+    background-color: #FFFFFF;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+.home-logo-section {
+    display: flex; flex-direction: column; align-items: center;
+    margin-bottom: 40px;
+}
+.home-logo-container {
+    display: flex; align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap; justify-content: center; gap: 8px;
+}
+.home-hexagon-icon {
+    position: relative; width: 60px; height: 70px;
+    margin-right: 10px; flex-shrink: 0;
+}
+.home-hexagon {
+    position: absolute; width: 60px; height: 70px;
+    background-color: transparent;
+    border: 2px solid #FFFFFF;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    animation: hexAppear 3.5s ease-in-out infinite;
+    opacity: 0;
+}
+body.light-mode .home-hexagon { border-color: #1A1A1A; }
+.home-hexagon:nth-child(1) { top: 0; left: 0; }
+.home-hexagon:nth-child(2) { top: 10px; left: 35px; transform: scale(0.85); opacity: 0.8; }
+.home-hexagon:nth-child(3) { top: 10px; left: -35px; transform: scale(0.85); opacity: 0.8; }
+.home-hexagon:nth-child(4) { top: 40px; left: 18px; transform: scale(0.7); opacity: 0.6; }
+.home-hexagon:nth-child(5) { top: 40px; left: -18px; transform: scale(0.7); opacity: 0.6; }
+
+.home-logo-text {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+body.light-mode .home-logo-text { color: #1A1A1A; }
+
+.home-subtitle {
+    font-size: 1rem;
+    font-weight: 300;
+    color: #CCCCCC;
+    letter-spacing: 3px;
+    margin-top: 6px;
+}
+body.light-mode .home-subtitle { color: #666666; }
+
+.home-main-content {
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+}
+.home-button-section {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-bottom: 30px;
+}
+.home-button {
+    background-color: #262626;
+    border: none;
+    border-radius: 10px;
+    padding: 22px 24px;
+    color: #FFFFFF;
+    font-size: 1.2rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 1px;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+}
+body.light-mode .home-button { background-color: #F0F0F0; color: #1A1A1A; }
+.home-button:hover { transform: translateY(-3px); font-weight: 600; }
+
+.home-footer {
+    width: 100%;
+    padding-top: 20px;
+    border-top: 1px solid #262626;
+    font-size: 0.9rem;
+    color: #999999;
+    text-align: center;
+}
+body.light-mode .home-footer { border-top-color: #E0E0E0; color: #666666; }
+
+@keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+@media (max-width: 480px) {
+    #navBack { left: 12px; }
+    #navBackLevel { left: 100px; }
+    #navHome { right: 78px; }
+    .nav-btn-overlay { top: 12px; padding: 6px 14px; font-size: 0.75rem; }
+    .theme-toggle-global { top: 12px; right: 12px; transform: scale(0.85); }
+    .home-logo-text { font-size: 1.6rem; white-space: normal; text-align: center; }
+    .home-container { padding: 24px 16px; min-height: 500px; }
+}
+</style>
+<script src="rb-identity.js"></script>
+<script src="practice-sync.js"></script>
+<script src="rb-cloud-v2.js"></script>
+<script src="vocabulary.js"></script>
+<script src="vocabulary-4k.js"></script>
+<script src="rb-lexicon.js"></script>
+<script src="rb-wordexport.js"></script>
+<script src="teacher-panel.js"></script>
+</head>
+<body>
+
+<!-- ===== 入口：访问密码 + 姓名 ===== -->
+<div id="lockScreen">
+    <div class="lock-hex-row">
+        <div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <div class="lock-title">Reborn提优</div>
+    <div class="lock-sub">Veni · Vidi · Vici</div>
+    <div class="lock-card" id="lockCardPw">
+        <div class="lock-label">请输入访问密码</div>
+        <input type="password" id="lockInput" class="lock-input" placeholder="••••••••" autocomplete="off">
+        <div class="lock-err" id="lockErr"></div>
+        <button class="lock-btn" id="lockBtn">确认进入</button>
+        <!-- ⭐ 老师端入口：低调小字，不提示任何信息 -->
+        <div class="lock-teacher-entry">
+            <a id="teacherEntry" href="javascript:void(0)">查看教师端</a>
+        </div>
+    </div>
+    <div class="lock-card" id="lockCardName" style="display:none;">
+        <div class="lock-label">请输入学生姓名</div>
+        <input type="text" id="nameInput" class="lock-input" placeholder="如：文小月" maxlength="20" autocomplete="off" style="letter-spacing:2px;">
+        <div class="lock-err" id="nameErr"></div>
+        <button class="lock-btn" id="nameBtn">进入学习系统</button>
+    </div>
+</div>
+
+  <!-- ⭐ 老师端面板（入口：登录卡片下方小字「查看教师端」） -->
+  <div id="teacherMask">
+    <div class="teacher-full">
+      <div class="tf-toast" id="tfToast"></div>
+
+      <div class="tf-head">
+        <div class="tf-tabs" id="tfTabs">
+          <button class="on" data-t="today">📊 今日概览</button>
+          <button data-t="all">📋 全部记录</button>
+          <button data-t="cal">🗓 打卡日历</button>
+          <button data-t="stu">👥 学生名单</button>
+          <button data-t="share">🔗 分享打卡</button>
+          <button data-t="wrong">❗ 高频错词</button>
+        </div>
+        <button id="teacherClose" type="button">✕ 关闭老师端</button>
+      </div>
+
+      <!-- 概览卡：始终可见 -->
+      <div class="tf-stats" id="tStats"></div>
+
+      <!-- 云端未连接提示（默认隐藏） -->
+      <div class="tf-offline" id="tfOffline" style="display:none;"></div>
+
+      <!-- 筛选条 -->
+      <div class="tf-bar">
+        <label>姓名</label>
+        <input type="text" id="tName" placeholder="留空 = 全部学生" style="width:120px;">
+        <label>起始</label><input type="date" id="tStart">
+        <label>结束</label><input type="date" id="tEnd">
+        <button class="btn-main" id="tQuery" style="padding:9px 24px;font-size:0.9rem;">查询</button>
+        <button class="btn-outline" id="tRefresh" style="padding:9px 20px;font-size:0.9rem;">刷新</button>
+        <button class="btn-outline" id="tExportWrong" style="padding:9px 20px;font-size:0.9rem;">📤 导出错词</button>
+      </div>
+
+      <!-- 分区内容 -->
+      <div class="tf-pane on" id="tf-pane-today">        <div class="tf-out" id="tToday"><div class="empty-hint">加载中…</div></div>
+      </div>
+      <div class="tf-pane" id="tf-pane-all">
+        <div class="tf-out" id="tOut"><div class="empty-hint">点击「查询」从云端拉取学生练习记录</div></div>
+      </div>
+      <div class="tf-pane" id="tf-pane-cal">
+        <div class="tf-out" id="tCal"><div class="empty-hint">加载中…</div></div>
+      </div>
+      <div class="tf-pane" id="tf-pane-stu">
+        <div class="tf-out" id="tStu"><div class="empty-hint">加载中…</div></div>
+      </div>
+      <div class="tf-pane" id="tf-pane-share">
+        <div class="tf-out" id="tShare"><div class="empty-hint">加载中…</div></div>
+      </div>
+      <div class="tf-pane" id="tf-pane-wrong">
+        <div class="tf-out" id="tWrong"><div class="empty-hint">加载中…</div></div>
+      </div>
+
+    </div>
+  </div>
+
+
+<!-- ===== 主应用（验证后显示） ===== -->
+<div id="app">
+
+    <div class="theme-toggle-global" id="themeToggleGlobal">
+        <div class="dot"></div>
+    </div>
+
+    <button class="nav-btn-overlay" id="navBack">← 返回</button>
+    <button class="nav-btn-overlay" id="navBackLevel">← 回主页</button>
+    <button class="nav-btn-overlay" id="navHome">🏠 回到首页</button>
+    <div class="nav-btn-overlay" id="navUser" style="cursor:pointer;"></div>
+
+    <!-- ⭐ 设置面板（改姓名 / 改入口密码，均需老师口令） -->
+    <div id="setOverlay"></div>
+    <div id="setPanel">
+      <div class="set-head">
+        <span id="setTitle">设置</span>
+        <button id="setClose" type="button">✕</button>
+      </div>
+      <div class="set-row">
+        <div class="set-label">当前学生</div>
+        <div class="set-cur" id="setCurName">—</div>
+      </div>
+      <div class="set-row">
+        <div class="set-label">修改姓名</div>
+        <div class="set-inputs">
+          <input type="text" id="setNewName" placeholder="输入新姓名" maxlength="20">
+          <button id="setNameBtn" type="button">保存</button>
+        </div>
+      </div>
+      <div class="set-row">
+        <div class="set-label">修改入口密码</div>
+        <div class="set-inputs">
+          <input type="password" id="setNewPw" placeholder="输入新密码" maxlength="30">
+          <button id="setPwBtn" type="button">保存</button>
+        </div>
+      </div>
+      <div class="set-msg" id="setMsg"></div>
+    </div>
+
+    <section class="page active" data-page="home">
+        <div class="home-content">
+            <div class="home-container">
+                <div class="home-logo-section">
+                    <div class="home-logo-container">
+                        <div class="home-hexagon-icon">
+                            <div class="home-hexagon"></div>
+                            <div class="home-hexagon"></div>
+                            <div class="home-hexagon"></div>
+                            <div class="home-hexagon"></div>
+                            <div class="home-hexagon"></div>
+                        </div>
+                        <div class="home-logo-text">Reborn提优，just join in！</div>
+                    </div>
+                    <div class="home-subtitle">Veni • Vidi • Vici</div>
+                </div>
+
+                <div class="home-main-content">
+                    <div class="home-button-section">
+                        <button class="home-button" data-nav="core">核心词汇</button>
+                        <button class="home-button" data-nav="speaking-entry">口语题库</button>
+                        <!-- ⭐ 作业提交 -->
+                        <button class="home-button" data-nav="homework-checkin">作业打卡 · 反馈</button>
+                    </div>
+                </div>
+
+                <div class="home-footer">天天进步，每日新生</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="page" data-page="core" data-back="home" data-back-text="← 回主页">
+        <iframe src="core-entry.html"></iframe>
+    </section>
+
+    <section class="page" data-page="listening" data-back="core" data-back-text="← 回核心词汇">
+        <iframe src="listening-entry.html"></iframe>
+    </section>
+
+    <section class="page" data-page="listening-study" data-back="core" data-back-text="← 回核心词汇">
+        <iframe src="listening-study.html"></iframe>
+    </section>
+
+                <section class="page" data-page="listening-quiz" data-back="core" data-back-text="← 回核心词汇">
+        <iframe src="listening-quiz.html"></iframe>
+    </section>
+
+    <!-- 词汇默写：独立 section，子页不再用 location.href 替换父级 iframe -->
+    <section class="page" data-page="vocab-quiz" data-back="listening-quiz" data-back-text="← 回选单元">
+        <iframe id="vocabQuizFrame" src="about:blank"></iframe>
+    </section>
+
+    <section class="page" data-page="reading" data-back="core" data-back-text="← 回核心词汇">
+        <iframe src="reading-538.html"></iframe>
+    </section>
+
+    <section class="page" data-page="reading-advanced" data-back="core" data-back-text="← 回核心词汇">
+        <div style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;background:#1A1A1A;">
+            <div style="text-align:center;color:#fff;padding:40px;">
+                <div style="font-size:3rem;margin-bottom:20px;">🚀</div>
+                <div style="font-size:1.4rem;margin-bottom:20px;">高阶核心词汇</div>
+                <div style="color:#999;margin-bottom:30px;line-height:1.6;">此页面为外链，点击下方按钮在新标签页打开</div>
+                <a href="https://liuyanglouise.github.io/advanced-vocabulary-21-days-xuexiyumoxie/" target="_blank" style="display:inline-block;padding:14px 40px;background:#2E5938;color:#fff;border-radius:40px;text-decoration:none;font-size:1.1rem;font-weight:600;">🚀 打开高阶词汇</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="page" data-page="speaking-entry" data-back="home" data-back-text="← 回主页">
+        <iframe src="speaking-entry.html"></iframe>
+    </section>
+
+    <section class="page" data-page="speaking-bank" data-back="speaking-entry" data-back-text="← 回口语题库">
+        <iframe src="speaking-bank.html" allow="autoplay"></iframe>
+    </section>
+
+    <!-- ⭐ 口语自主练习 -->
+    <section class="page" data-page="speaking-practice" data-back="speaking-entry" data-back-text="← 回口语题库">
+        <iframe src="speaking-practice.html" allow="microphone; autoplay"></iframe>
+    </section>
+
+    <section class="page" data-page="speaking-mock" data-back="speaking-entry" data-back-text="← 回口语题库">
+        <iframe src="speaking-mock.html" allow="microphone; autoplay"></iframe>
+    </section>
+
+    <section class="page" data-page="writing" data-back="core" data-back-text="← 回核心词汇">
+        <iframe src="writing-entry.html"></iframe>
+    </section>
+
+    <section class="page" data-page="writing-t1" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="writing-t1-entry.html"></iframe>
+    </section>
+
+    <section class="page" data-page="t1-dynamic" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="t1-dynamic.html"></iframe>
+    </section>
+    <section class="page" data-page="t1-static" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="t1-static.html"></iframe>
+    </section>
+    <section class="page" data-page="t1-map" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="t1-map.html"></iframe>
+    </section>
+    <section class="page" data-page="t1-flow" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="t1-flow.html"></iframe>
+    </section>
+
+    <section class="page" data-page="writing-t2" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="writing-t2-entry.html"></iframe>
+    </section>
+
+    <section class="page" data-page="t2-gov" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-gov.html"></iframe>
+    </section>
+    <section class="page" data-page="t2-health" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-health.html"></iframe>
+    </section>
+    <section class="page" data-page="t2-edu" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-edu.html"></iframe>
+    </section>
+    <section class="page" data-page="t2-econ" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-econ.html"></iframe>
+    </section>
+    <section class="page" data-page="t2-tech" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-tech.html"></iframe>
+    </section>
+    <section class="page" data-page="t2-media" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-media.html"></iframe>
+    </section>
+    <section class="page" data-page="t2-energy" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-energy.html"></iframe>
+    </section>
+    <section class="page" data-page="t2-city" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-city.html"></iframe>
+    </section>
+    <section class="page" data-page="t2-culture" data-back="writing" data-back-text="← 回写作素材">
+        <iframe src="T2-culture.html"></iframe>
+    </section>
+
+    <!-- ⭐ 4000+必刷词（内嵌，无外链无密码，可自动统计） -->
+    <section class="page" data-page="vocab-4k" data-back="core" data-back-text="← 回核心词汇">
+        <iframe src="vocab-4k-quiz.html"></iframe>
+    </section>
+    <section class="page" data-page="vocab-4k-check" data-back="vocab-4k" data-back-text="← 回4000+必刷词">
+        <iframe id="vocab4kCheckFrame" src="vocab-4k-check.html"></iframe>
+    </section>
+    <section class="page" data-page="vocab-4k-study" data-back="vocab-4k" data-back-text="← 回4000+必刷词">
+        <iframe id="vocab4kStudyFrame" src="vocab-4k-study.html"></iframe>
+    </section>
+
+    <!-- ⭐ 作业提交 -->
+    <section class="page" data-page="homework-checkin" data-back="home" data-back-text="← 回主页">
+        <iframe src="homework-checkin.html" allow="clipboard-read; clipboard-write"></iframe>
+    </section>
+
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ===== 入口密码（老师可在设置里改，存在本地） =====
+    const DEFAULT_PW = ['61211216', 'reborn2026'];
+    const lockScreen = document.getElementById('lockScreen');
+    const lockInput = document.getElementById('lockInput');
+    const lockBtn = document.getElementById('lockBtn');
+    const lockErr = document.getElementById('lockErr');
+    const app = document.getElementById('app');
+    const themeToggle = document.getElementById('themeToggleGlobal');
+    const navUser = document.getElementById('navUser');
+
+    function getEntryPw() {
+        try { const v = JSON.parse(localStorage.getItem('rb_entry_pw') || 'null'); return Array.isArray(v) && v.length ? v : DEFAULT_PW; }
+        catch (e) { return DEFAULT_PW; }
+    }
+    function setEntryPw(list) {
+        try { localStorage.setItem('rb_entry_pw', JSON.stringify(list)); } catch (e) {}
+    }
+
+    const lockCardPw = document.getElementById('lockCardPw');
+    const lockCardName = document.getElementById('lockCardName');
+    const nameInput = document.getElementById('nameInput');
+    const nameErr = document.getElementById('nameErr');
+    const nameBtn = document.getElementById('nameBtn');
+
+    function showPwCard() {
+        lockCardPw.style.display = '';
+        lockCardName.style.display = 'none';
+        lockInput.value = '';
+        lockErr.textContent = '';
+        setTimeout(() => lockInput.focus(), 200);
+    }
+    function showNameCard() {
+        lockCardPw.style.display = 'none';
+        lockCardName.style.display = '';
+        nameErr.textContent = '';
+        setTimeout(() => nameInput.focus(), 200);
+    }
+
+    function tryUnlock() {
+        const v = lockInput.value.trim();
+        if (!v) { lockErr.textContent = '请输入密码'; lockInput.focus(); return; }
+        if (getEntryPw().indexOf(v) < 0) {
+            lockErr.textContent = '密码错误，请重试';
+            lockInput.value = '';
+            lockInput.focus();
+            return;
+        }
+        lockErr.textContent = '';
+        // 已有姓名直接进，否则问一次
+        if (window.RBIdentity && RBIdentity.getName() && RBIdentity.isLoggedIn()) {
+            unlockApp();
+        } else {
+            showNameCard();
+        }
+    }
+
+    function submitName() {
+        const v = nameInput.value.trim();
+        if (!v) { nameErr.textContent = '请输入姓名'; nameInput.focus(); return; }
+        if (!/^[\u4e00-\u9fa5A-Za-z·]+(?:[\s][\u4e00-\u9fa5A-Za-z·]+)*$/.test(v) || v.length > 20) {
+            nameErr.textContent = '姓名只能包含中文或英文字母';
+            nameInput.focus(); return;
+        }
+        nameErr.textContent = '';
+        if (window.RBIdentity) RBIdentity.setName(v);
+        unlockApp();
+    }
+
+    function unlockApp() {
+        lockScreen.classList.add('hide');
+        setTimeout(() => {
+            lockScreen.style.display = 'none';
+            app.classList.add('ready');
+            renderUserBadge();
+        }, 500);
+    }
+
+    lockBtn.addEventListener('click', tryUnlock);
+    lockInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+    nameBtn.addEventListener('click', submitName);
+    nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitName(); });
+
+    // ⭐ 老师端入口：登录卡片下方的小字，口令 reborn2016，不提示任何信息
+    document.getElementById('teacherEntry').addEventListener('click', function () {
+        if (!window.TeacherPanel) { alert('面板未就绪'); return; }
+        if (!window.RBIdentity || !RBIdentity.askPassword) { alert('组件未就绪'); return; }
+        RBIdentity.askPassword('请输入密码', 'teacher').then(function (pw) {
+            if (!pw) return;
+            TeacherPanel.open();
+        });
+    });
+
+    // ===== 设置面板（改姓名 / 改入口密码，均需老师口令） =====
+    const setPanel = document.getElementById('setPanel');
+    const setOverlay = document.getElementById('setOverlay');
+    const setMsg = document.getElementById('setMsg');
+
+    function renderUserBadge() {
+        const n = (window.RBIdentity && RBIdentity.getName()) || '';
+        navUser.textContent = n ? ('👤 ' + n + ' ▾') : '';
+        navUser.classList.toggle('show', !!n);
+    }
+    if (window.RBIdentity && RBIdentity.onChange) RBIdentity.onChange(renderUserBadge);
+    renderUserBadge();
+
+    function openSetPanel() {
+        document.getElementById('setCurName').textContent = (window.RBIdentity && RBIdentity.getName()) || '（未设置）';
+        document.getElementById('setNewName').value = '';
+        document.getElementById('setNewPw').value = '';
+        setMsg.textContent = ''; setMsg.className = 'set-msg';
+        setPanel.classList.add('show'); setOverlay.classList.add('show');
+        setTimeout(() => document.getElementById('setNewName').focus(), 80);
+    }
+    function closeSetPanel() { setPanel.classList.remove('show'); setOverlay.classList.remove('show'); }
+    setOverlay.addEventListener('click', closeSetPanel);
+    document.getElementById('setClose').addEventListener('click', closeSetPanel);
+    navUser.addEventListener('click', openSetPanel);
+
+    document.getElementById('setNameBtn').addEventListener('click', function () {
+        const v = document.getElementById('setNewName').value.trim();
+        if (!v) { setMsg.textContent = '请输入新姓名'; setMsg.className = 'set-msg err'; return; }
+        if (!/^[\u4e00-\u9fa5A-Za-z·]+(?:[\s][\u4e00-\u9fa5A-Za-z·]+)*$/.test(v) || v.length > 20) {
+            setMsg.textContent = '姓名只能包含中文或英文字母'; setMsg.className = 'set-msg err'; return;
+        }
+        if (!window.RBIdentity) { setMsg.textContent = '组件未就绪'; setMsg.className = 'set-msg err'; return; }
+        RBIdentity.askPassword('请输入密码').then(function (pw) {
+            if (!pw) { setMsg.textContent = '已取消'; setMsg.className = 'set-msg'; return; }
+            RBIdentity.setName(v);
+            document.getElementById('setCurName').textContent = v;
+            document.getElementById('setNewName').value = '';
+            setMsg.textContent = '✅ 姓名已改为：' + v;
+            setMsg.className = 'set-msg ok';
+        });
+    });
+
+    document.getElementById('setPwBtn').addEventListener('click', function () {
+        const v = document.getElementById('setNewPw').value.trim();
+        if (!v) { setMsg.textContent = '请输入新密码'; setMsg.className = 'set-msg err'; return; }
+        if (v.length < 4) { setMsg.textContent = '密码至少 4 位'; setMsg.className = 'set-msg err'; return; }
+        if (!window.RBIdentity) { setMsg.textContent = '组件未就绪'; setMsg.className = 'set-msg err'; return; }
+        RBIdentity.askPassword('请输入密码').then(function (pw) {
+            if (!pw) { setMsg.textContent = '已取消'; setMsg.className = 'set-msg'; return; }
+            setEntryPw([v]);
+            document.getElementById('setNewPw').value = '';
+            setMsg.textContent = '✅ 入口密码已更新，下次进入请用新密码';
+            setMsg.className = 'set-msg ok';
+        });
+    });
+
+    // 麦克风权限：进首页申请一次，全站复用
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function(stream) {
+                window.__micStream = stream;
+            })
+            .catch(function(err) {});
+    }
+
+    // 主题
+    function syncIframeTheme(iframe) {
+        try {
+            const doc = iframe.contentDocument;
+            if (!doc || !doc.body) return;
+            const isLight = document.body.classList.contains('light-mode');
+            if (isLight) doc.body.classList.add('light-mode');
+            else doc.body.classList.remove('light-mode');
+            doc.querySelectorAll('[id$="LogoText"], .logo-text').forEach(el => {
+                if (isLight && el.textContent.includes('黑皮书'))
+                    el.textContent = el.textContent.replace('黑皮书', '白皮书');
+                else if (!isLight && el.textContent.includes('白皮书'))
+                    el.textContent = el.textContent.replace('白皮书', '黑皮书');
+            });
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'theme', isLight: isLight }, '*');
+            }
+        } catch (err) {}
+    }
+
+    function applyTheme(isLight) {
+        if (isLight) document.body.classList.add('light-mode');
+        else document.body.classList.remove('light-mode');
+        document.querySelectorAll('iframe').forEach(syncIframeTheme);
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    }
+
+    if (localStorage.getItem('theme') === 'light') applyTheme(true);
+    else applyTheme(false);
+
+    themeToggle.addEventListener('click', () => {
+        applyTheme(!document.body.classList.contains('light-mode'));
+    });
+
+    // 导航
+    const navBack = document.getElementById('navBack');
+    const navBackLevel = document.getElementById('navBackLevel');
+    const navHome = document.getElementById('navHome');
+    const historyStack = [];
+
+    function getPage(name) { return document.querySelector(`.page[data-page="${name}"]`); }
+
+    function navigateTo(targetName, pushHistory, force) {
+        const current = document.querySelector('.page.active');
+        const target = getPage(targetName);
+        if (!target) return;
+        const samePage = current && current.dataset.page === targetName;
+        // force：目标即当前页时仍重载其 iframe。
+        // 用于「子页用 location.href 就地把 iframe 换掉后需要复位」的场景。
+        if (samePage && !force) return;
+
+        if (current) {
+            current.classList.remove('active');
+            current.classList.add('behind');
+            setTimeout(() => current.classList.remove('behind'), 500);
+        }
+        target.classList.add('active');
+
+        const iframe = target.querySelector('iframe');
+        if (iframe) {
+            if (samePage && force) {
+                // 重载当前页的 iframe。
+                // 不要先置 about:blank —— 那会让 iframe 短暂空白，
+                // 学生此时点击/切页就会看到「闪退」，且期间发出的消息全部丢失。
+                // 直接重设同一个 src 即可拿到干净的新实例。
+                const url = new URL(iframe.src, location.href);
+                iframe.src = url.pathname.split('/').pop() + url.search;
+            }
+            setTimeout(() => syncIframeTheme(iframe), 100);
+        }
+
+        updateNavButtons(targetName);
+
+        if (pushHistory !== false && current && !samePage) historyStack.push(current.dataset.page);
+    }
+
+    function goBack() {
+        const prev = historyStack.pop();
+        navigateTo(prev || 'home', false);
+    }
+
+    function goHome() {
+        historyStack.length = 0;
+        navigateTo('home', false);
+    }
+
+    function goBackLevel() {
+        const current = document.querySelector('.page.active');
+        if (!current) return;
+        const backTarget = current.dataset.back;
+        if (backTarget) navigateTo(backTarget);
+    }
+
+    function updateNavButtons(pageName) {
+        const current = document.querySelector('.page.active');
+        if (!current) return;
+
+        if (pageName === 'home') {
+            navBack.classList.remove('show');
+            navBackLevel.classList.remove('show');
+            navHome.classList.remove('show');
+            return;
+        }
+
+        navBack.classList.add('show');
+
+        const backLevelText = current.dataset.backText;
+        if (backLevelText) {
+            navBackLevel.textContent = backLevelText;
+            navBackLevel.classList.add('show');
+        } else {
+            navBackLevel.classList.remove('show');
+        }
+
+        navHome.classList.add('show');
+    }
+
+    navBack.addEventListener('click', goBack);
+    navBackLevel.addEventListener('click', goBackLevel);
+    navHome.addEventListener('click', goHome);
+
+    document.querySelectorAll('.home-button').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const target = this.dataset.nav;
+            const rect = this.getBoundingClientRect();
+            const ripple = document.createElement('div');
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.cssText = `
+                position:absolute;border-radius:50%;transform:scale(0);
+                animation:ripple 0.6s linear;pointer-events:none;
+                width:${size}px;height:${size}px;
+                left:${e.clientX - rect.left - size/2}px;
+                top:${e.clientY - rect.top - size/2}px;
+                background:${document.body.classList.contains('light-mode') ? 'rgba(26,26,26,0.15)' : 'rgba(255,255,255,0.25)'};
+            `;
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+            setTimeout(() => navigateTo(target), 80);
+        });
+    });
+
+    const PAGE_MAP = {
+        'core-entry.html': { '听力词汇': 'listening', '阅读词汇': 'reading', '口语题库': 'speaking-entry', '写作素材': 'writing' },
+        'listening-entry.html': { '词汇学习': 'listening-study', '默写检查': 'listening-quiz' },
+        'speaking-entry.html': {
+            '口语实考题库': 'speaking-bank',
+            '自主练习': 'speaking-practice',
+            '口语模拟考试': 'speaking-mock'
+        },
+        'writing-entry.html': { 'Task 1': 'writing-t1', 'Task 2': 'writing-t2' },
+        'writing-t1-entry.html': { '动态图': 't1-dynamic', '静态图': 't1-static', '地图': 't1-map', '流程图': 't1-flow' },
+        'writing-t2-entry.html': {
+            '政府与公共政策': 't2-gov', '健康与心理': 't2-health', '教育': 't2-edu',
+            '经济与消费': 't2-econ', '科技与工作': 't2-tech', '媒体与广告': 't2-media',
+            '能源与环境': 't2-energy', '社会生活与城市': 't2-city', '文化与全球化': 't2-culture'
+        },
+        'reading-538.html': {
+            '538核心词汇': 'reading',
+            '4000': 'vocab-4k',
+            '高阶核心词汇': 'reading-advanced',
+            '高阶词汇': 'reading-advanced',
+            'advanced': 'reading-advanced'
+        },
+        // 4000+必刷词：选单元页里的两个入口
+        'vocab-4k-quiz.html': { '开始学习闪卡': 'vocab-4k-study', '开始默写检查': 'vocab-4k-check' }
+    };
+
+    function getIframeFileName(iframe) {
+        const src = iframe.getAttribute('src') || '';
+        return src.split('?')[0].split('/').pop();
+    }
+
+    document.querySelectorAll('.page iframe').forEach(iframe => {
+        iframe.addEventListener('load', function() {
+            try {
+                const doc = iframe.contentDocument;
+                if (!doc) return;
+                doc.querySelectorAll('.theme-slider-container, .theme-slider').forEach(el => el.style.display = 'none');
+                syncIframeTheme(iframe);
+
+                const fileName = getIframeFileName(iframe);
+                const map = PAGE_MAP[fileName];
+                if (map) {
+                    doc.querySelectorAll('button, a').forEach(el => {
+                        el.addEventListener('click', function(e) {
+                            const url = this.dataset.url || this.getAttribute('href') || '';
+                            for (const [key, targetPage] of Object.entries(map)) {
+                                if (url.includes(key) || this.textContent.includes(key)) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    navigateTo(targetPage);
+                                    return;
+                                }
+                            }
+                        }, true);
+                    });
+                }
+            } catch (err) {}
+        });
+    });
+
+    // 接收 iframe 消息
+    window.addEventListener('message', function(e) {
+        const data = e.data;
+        if (!data || !data.type) return;
+        if (data.type === 'navigate' && data.page) {
+            navigateTo(data.page, undefined, !!data.force);
+        }
+        // 开始词汇默写：切到独立的 vocab-quiz 页并带上参数，
+        // 避免子页用 location.href 替换父级 iframe
+        if (data.type === 'startQuiz') {
+            const frame = document.getElementById('vocabQuizFrame');
+            if (frame) {
+                frame.src = 'quiz.html?units=' + encodeURIComponent(data.units || '') +
+                             '&accent=' + encodeURIComponent(data.accent || 'uk');
+            }
+            navigateTo('vocab-quiz');
+        }
+        if (data.type === 'startVocab4k') {
+            // 4000+必刷词检查：把选中的单元写进 iframe 的 query 再切页
+            const f4k = document.getElementById('vocab4kCheckFrame');
+            if (f4k) {
+                f4k.src = 'vocab-4k-check.html?units=' + encodeURIComponent(data.units || '');
+            }
+            navigateTo('vocab-4k-check', true, true);
+        }
+        if (data.type === 'startVocab4kStudy') {
+            // 4000+必刷词学习闪卡
+            const fs = document.getElementById('vocab4kStudyFrame');
+            if (fs) {
+                fs.src = 'vocab-4k-study.html?unit=' + encodeURIComponent(data.unit || '');
+            }
+            navigateTo('vocab-4k-study', true, true);
+        }
+        if (data.type === 'requestMic') {
+            if (window.__micStream && window.__micStream.active) {
+                try { e.source.postMessage({ type: 'micGranted' }, '*'); } catch(err) {}
+            } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(function(stream) {
+                        window.__micStream = stream;
+                        try { e.source.postMessage({ type: 'micGranted' }, '*'); } catch(err) {}
+                    })
+                    .catch(function(err) {
+                        try { e.source.postMessage({ type: 'micDenied', error: String(err) }, '*'); } catch(err2) {}
+                    });
+            }
+        }
+        if (data.type === 'speak' && data.text) {
+            var sender = e.source;
+            playText(data.text, data.accent, function() {
+                try { sender.postMessage({ type: 'speakEnd' }, '*'); } catch(err) {}
+            });
+        }
+    });
+
+    function playText(text, accent, onDone) {
+        if (!text) { if (onDone) onDone(); return; }
+
+        var fired = false;
+        function done() {
+            if (fired) return;
+            fired = true;
+            if (onDone) { try { onDone(); } catch(e) {} }
+        }
+
+        try {
+            var audio = new Audio('https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2');
+            audio.volume = 0.9;
+            audio.onended = done;
+            audio.onerror = function() {
+                fallbackToSpeech(text, accent, done);
+            };
+            var playPromise = audio.play();
+            if (playPromise && playPromise.catch) {
+                playPromise.catch(function() {
+                    fallbackToSpeech(text, accent, done);
+                });
+            }
+            setTimeout(done, Math.max(4000, text.length * 150));
+        } catch (err) {
+            fallbackToSpeech(text, accent, done);
+        }
+    }
+
+    function fallbackToSpeech(text, accent, done) {
+        if ('speechSynthesis' in window) {
+            try {
+                var u = new SpeechSynthesisUtterance(text);
+                u.lang = (accent === 'us') ? 'en-US' : 'en-GB';
+                u.rate = 0.9;
+                u.onend = done;
+                u.onerror = done;
+                window.speechSynthesis.speak(u);
+                setTimeout(done, Math.max(4000, text.length * 150));
+                return;
+            } catch (err) {}
+        }
+        done();
+    }
+
+    showPwCard();
+    updateNavButtons('home');
+
+})();
+</script>
+</body>
+</html>

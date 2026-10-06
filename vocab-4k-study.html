@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4000+必刷词 · 学习闪卡</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans SC',sans-serif;
+    background:#F4FAF0;min-height:100vh;padding:16px 14px 40px;color:#2e623d;
+  }
+  .wrap{max-width:720px;margin:0 auto;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo-text{font-size:1.15rem;font-weight:700;color:#1c4a2a;letter-spacing:1px;}
+  .topbar .btns{display:flex;gap:8px;}
+
+  /* 单元切换条（对齐听力词汇样式） */
+  .unit-scroll{overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;padding:0 0 .7rem;scrollbar-width:none;}
+  .unit-scroll::-webkit-scrollbar{display:none;}
+  .unit-flex{display:inline-flex;gap:.5rem;padding:0 .2rem;}
+  .unit-btn{
+    background:#f5fcf0;border:1px solid #dae8cf;border-radius:20px;
+    padding:.3rem 1.1rem;font-size:.85rem;font-weight:380;color:#3d734a;
+    white-space:nowrap;box-shadow:0 1px 3px rgba(120,150,100,.06);cursor:pointer;font-family:inherit;
+  }
+  .unit-btn.active-unit{background:#d0e8c2;border-color:#9ec092;color:#1a4024;font-weight:460;}
+  .word-count-badge{font-size:.7rem;background:#c3ddb6;border-radius:20px;padding:.1rem .5rem;margin-left:.4rem;color:#23522e;}
+
+  /* 翻卡 */
+  .flip-container{perspective:1000px;width:100%;margin:.8rem 0 1.2rem;}
+  .flipper{position:relative;width:100%;height:auto;transition:transform .4s ease;transform-style:preserve-3d;cursor:pointer;}
+  .flipper.flipped{transform:rotateY(180deg);}
+  .front,.back{
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;position:relative;
+    top:0;left:0;width:100%;border-radius:42px;padding:2.8rem 1.2rem;
+    background:#fcfff8;border:1px solid #e3f0da;box-shadow:0 10px 20px rgba(130,160,120,.1);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:230px;
+  }
+  .back{position:absolute;transform:rotateY(180deg);min-height:230px;}
+  .en-word{font-size:2.8rem;font-weight:370;color:#1c4a2a;line-height:1.3;word-break:break-word;text-align:center;width:100%;}
+  .ch-word{font-size:1.9rem;font-weight:340;color:#316a42;margin-top:.5rem;text-align:center;width:100%;}
+  .pos{font-size:1.1rem;color:#719b79;font-weight:380;text-align:center;width:100%;margin-bottom:.4rem;}
+  .flip-tip{font-size:.8rem;color:#a8c4ac;margin-top:1rem;text-align:center;width:100%;}
+
+  /* 进度与导航 */
+  .prog-wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:1rem;flex-wrap:wrap;}
+  .prog-badge{font-size:.9rem;color:#3d6d4b;font-weight:400;}
+  .mark-group{display:flex;gap:8px;}
+  .mark-group button{
+    background:#f1fde9;border:1px solid #cde0c3;border-radius:60px;
+    padding:.4rem 1.1rem;font-size:.9rem;color:#295e36;cursor:pointer;font-family:inherit;
+  }
+  .mark-group button.known{background:#d7ecc9;border-color:#a9ca9c;font-weight:600;}
+  .mark-group button.unknown{background:#fbe3d8;border-color:#e0b39c;font-weight:600;}
+
+  .nav-row{display:flex;align-items:center;justify-content:center;gap:.8rem;margin:1.2rem 0 1.4rem;flex-wrap:wrap;}
+  .nav-btn{
+    background:#f1fde9;border:1px solid #cde0c3;border-radius:60px;
+    padding:.6rem 1.5rem;font-size:1.05rem;color:#295e36;
+    box-shadow:0 2px 6px rgba(0,0,0,.02);cursor:pointer;font-family:inherit;
+  }
+  .nav-btn:hover{background:#e6f6da;}
+  .nav-btn.primary{background:#2E5938;color:#fff;border-color:#2E5938;font-weight:600;}
+  .nav-btn.primary:hover{background:#24482e;}
+  .nav-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* 完成面板 */
+  .done-card{
+    background:#fcfff8;border:1px solid #e3f0da;border-radius:42px;
+    padding:2.4rem 1.4rem;text-align:center;box-shadow:0 10px 20px rgba(130,160,120,.1);
+  }
+  .done-card h3{font-size:1.5rem;font-weight:400;color:#1c4a2a;margin-bottom:.5rem;}
+  .done-card p{font-size:.95rem;color:#6b8f72;margin-bottom:1.2rem;line-height:1.7;}
+  .done-stats{display:flex;justify-content:center;gap:1.6rem;margin-bottom:1.3rem;flex-wrap:wrap;}
+  .done-stats .s .n{font-size:1.9rem;font-weight:700;color:#2E5938;line-height:1.2;}
+  .done-stats .s .l{font-size:.76rem;color:#8aa893;}
+
+  .tip{color:#799e7a;font-size:.86rem;margin-top:.8rem;text-align:center;line-height:1.7;}
+
+  @media (max-width:480px){
+    .en-word{font-size:2.1rem;} .ch-word{font-size:1.5rem;}
+    .front,.back{padding:1.8rem 1rem;min-height:190px;}
+    .logo-text{font-size:1rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-text">4000+ 必刷词</div>
+    </div>
+    <div class="btns">
+      <button class="nav-btn primary" id="toQuiz">🎯 去检查</button>
+    </div>
+  </div>
+
+  <div class="unit-scroll"><div class="unit-flex" id="unitBar"></div></div>
+
+  <div class="prog-wrap">
+    <span class="prog-badge" id="prog">—</span>
+    <div class="mark-group">
+      <button id="markKnow">✓ 认识</button>
+      <button id="markUnknown">✗ 不认识</button>
+    </div>
+  </div>
+
+  <div id="stage"></div>
+
+  <div class="nav-row">
+    <button class="nav-btn" id="prevBtn">← 上一个</button>
+    <button class="nav-btn" id="nextBtn">下一个 →</button>
+  </div>
+
+  <div class="tip">💡 点击卡片翻面看释义 · 标记「认识 / 不认识」后可一键去检查</div>
+</div>
+
+<script src="rb-identity.js"></script>
+<script src="practice-sync.js"></script>
+<script src="vocabulary-4k.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $ = id => document.getElementById(id);
+  var DATA = window.VOCABULARY_4K || {};
+  var MARKS = 'rb_vocab4k_marks';   // {unitId:{word:1|0}}
+  var LOGINED = 'rb_vocab4k_logged';
+
+  var urlP = new URLSearchParams(location.search);
+  var startUnit = urlP.get('unit') || (Object.keys(DATA)[0] || '');
+  var unitId = DATA[startUnit] ? startUnit : (Object.keys(DATA)[0] || '');
+  var idx = 0;
+  var studied = {};   // 本次会话已看过
+
+  function readMarks(){
+    try { return JSON.parse(localStorage.getItem(MARKS) || '{}'); } catch(e){ return {}; }
+  }
+  function saveMarks(m){ try { localStorage.setItem(MARKS, JSON.stringify(m)); } catch(e){} }
+
+  function unitMarks(id){
+    var m = readMarks();
+    if(!m[id]) m[id] = {};
+    return m[id];
+  }
+  function setMark(word, val){
+    var m = readMarks();
+    if(!m[unitId]) m[unitId] = {};
+    m[unitId][word] = val;
+    saveMarks(m);
+  }
+
+  function words(){ return (DATA[unitId] && DATA[unitId].words) || []; }
+
+  function renderUnitBar(){
+    var html='';
+    Object.keys(DATA).forEach(function(id){
+      var u=DATA[id];
+      var mk=unitMarks(id);
+      var known=Object.keys(mk).filter(function(w){return mk[w]===1;}).length;
+      var badge = known>0 ? '<span class="word-count-badge">'+known+'/'+u.words.length+'</span>' : '';
+      html += '<button class="unit-btn'+(id===unitId?' active-unit':'')+'" data-id="'+id+'">'+u.name+badge+'</button>';
+    });
+    $('unitBar').innerHTML=html;
+    Array.prototype.forEach.call($('unitBar').querySelectorAll('.unit-btn'), function(b){
+      b.addEventListener('click', function(){
+        unitId = b.dataset.id; idx = 0;
+        renderUnitBar(); render();
+      });
+    });
+  }
+
+  function render(){
+    var ws = words();
+    var stage = $('stage');
+
+    if(!ws.length){
+      stage.innerHTML = '<div class="done-card"><h3>该单元暂无词汇</h3></div>';
+      $('prog').textContent = '—';
+      return;
+    }
+
+    if(idx >= ws.length){ showDone(); return; }
+
+    var w = ws[idx];
+    var mk = unitMarks(unitId);
+    var mark = mk[w.word];
+    $('prog').innerHTML = '第 <b>'+(idx+1)+'</b> / '+ws.length+' 个 · <b>'+uName()+'</b>';
+    $('markKnow').className = mark===1 ? 'known' : '';
+    $('markUnknown').className = mark===0 ? 'unknown' : '';
+    $('prevBtn').disabled = idx<=0;
+    $('nextBtn').textContent = (idx===ws.length-1) ? '完成 ✓' : '下一个 →';
+
+    stage.innerHTML =
+      '<div class="flip-container"><div class="flipper" id="flipper">' +
+        '<div class="front">' +
+          '<div class="pos">'+(w.pos||'')+'</div>' +
+          '<div class="en-word">'+w.word+'</div>' +
+          '<div class="flip-tip">点击卡片看释义</div>' +
+        '</div>' +
+        '<div class="back">' +
+          '<div class="en-word" style="font-size:1.9rem;">'+w.word+'</div>' +
+          '<div class="ch-word">'+w.meaning+'</div>' +
+          '<div class="pos" style="margin-top:.6rem;">'+(w.pos||'')+'</div>' +
+        '</div>' +
+      '</div></div>';
+
+    $('flipper').addEventListener('click', function(){ this.classList.toggle('flipped'); });
+  }
+
+  function uName(){ return (DATA[unitId] && DATA[unitId].name) || ''; }
+
+  function showDone(){
+    var ws = words();
+    var mk = unitMarks(unitId);
+    var known=0, unknown=0;
+    ws.forEach(function(w){ if(mk[w.word]===1) known++; else if(mk[w.word]===0) unknown++; });
+    var pct = ws.length ? Math.round(known/ws.length*100) : 0;
+
+    $('prog').textContent = '本单元已完成';
+    $('stage').innerHTML =
+      '<div class="done-card">' +
+        '<h3>'+uName()+' · 学完啦</h3>' +
+        '<p>共 '+ws.length+' 个词，认识 '+known+' 个（'+pct+'%）</p>' +
+        '<div class="done-stats">' +
+          '<div class="s"><div class="n">'+known+'</div><div class="l">认识</div></div>' +
+          '<div class="s"><div class="n" style="color:#cc6b2c;">'+unknown+'</div><div class="l">不认识</div></div>' +
+          '<div class="s"><div class="n" style="color:#8aa893;">'+(ws.length-known-unknown)+'</div><div class="l">未标记</div></div>' +
+        '</div>' +
+        '<div class="nav-row" style="margin:.4rem 0 0;">' +
+          '<button class="nav-btn primary" id="doneQuiz">🎯 检查这一单元</button>' +
+          '<button class="nav-btn" id="againBtn">🔄 再学一遍</button>' +
+        '</div>' +
+      '</div>';
+
+    $('doneQuiz').addEventListener('click', function(){ goQuiz(unitId); });
+    $('againBtn').addEventListener('click', function(){ idx=0; render(); });
+  }
+
+  // 记录学习行为（每个单元学完记一次，用于分项统计）
+  function markStudied(){
+    if(studied[unitId]) return;
+    studied[unitId] = 1;
+    try { localStorage.setItem(LOGINED, Date.now().toString()); } catch(e){}
+  }
+
+  function goQuiz(ids){
+    var list = Array.isArray(ids) ? ids : [ids];
+    if(window.parent && window.parent !== window){
+      try { window.parent.postMessage({ type:'startVocab4k', units:list.join(',') }, '*'); }
+      catch(e){ location.href='vocab-4k-check.html?units='+list.join(','); }
+    } else {
+      location.href = 'vocab-4k-check.html?units=' + list.join(',');
+    }
+  }
+
+  $('prevBtn').addEventListener('click', function(){ if(idx>0){ idx--; render(); } });
+  $('nextBtn').addEventListener('click', function(){
+    if(idx < words().length-1){ idx++; render(); }
+    else { markStudied(); showDone(); }
+  });
+  $('markKnow').addEventListener('click', function(){
+    var w = words()[idx]; if(!w) return;
+    setMark(w.word, 1); renderUnitBar(); render();
+  });
+  $('markUnknown').addEventListener('click', function(){
+    var w = words()[idx]; if(!w) return;
+    setMark(w.word, 0); renderUnitBar(); render();
+  });
+
+  // 去检查：默认带上「不认识」的词所在单元；没标记就带当前单元
+  $('toQuiz').addEventListener('click', function(){
+    var m = readMarks();
+    var weak = Object.keys(m).filter(function(id){
+      return Object.keys(m[id]||{}).some(function(w){ return m[id][w]===0; });
+    });
+    goQuiz(weak.length ? weak : [unitId]);
+  });
+
+  // 键盘：空格翻面，左右切换
+  document.addEventListener('keydown', function(e){
+    if(document.getElementById('flipper')){
+      if(e.key===' '||e.key==='Enter'){ e.preventDefault(); $('flipper').classList.toggle('flipped'); return; }
+    }
+    if(e.key==='ArrowLeft'){ $('prevBtn').click(); }
+    if(e.key==='ArrowRight'){ $('nextBtn').click(); }
+  });
+
+  renderUnitBar();
+  render();
+})();
+</script>
+</body>
+</html>

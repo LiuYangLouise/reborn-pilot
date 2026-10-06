@@ -1,0 +1,208 @@
+/* 老师端面板样式（由 main.html 引入，与学生端分离） */
+/* ⭐ 老师端整屏浮层 */
+#teacherMask{
+  position:fixed;inset:0;background:rgba(20,40,32,.55);
+  backdrop-filter:blur(4px);
+  /* 必须高于 #lockScreen(99999)，否则老师端面板会被登录屏挡住 */
+  z-index:100000;
+  display:none;align-items:flex-start;justify-content:center;
+  padding:24px 16px;overflow-y:auto;
+}
+#teacherMask.show{display:flex;animation:tfFade .2s ease;}
+@keyframes tfFade{from{opacity:0;}to{opacity:1;}}
+.teacher-full{
+  width:100%;max-width:1000px;background:#f5f7fa;
+  border-radius:28px;box-shadow:0 24px 70px rgba(0,20,30,.35);
+  padding:22px 24px 26px;margin:auto;
+  animation:tfSlide .28s cubic-bezier(.22,.9,.3,1);
+}
+@keyframes tfSlide{
+  from{opacity:0;transform:translateY(-28px) scale(.98);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+.tf-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+
+/* 顶部页签分区 */
+.tf-tabs{display:flex;gap:6px;flex-wrap:wrap;background:#e8eeea;padding:5px;border-radius:16px;}
+.tf-tabs button{
+  background:transparent;border:none;border-radius:12px;padding:9px 18px;
+  font-size:0.92rem;font-weight:600;color:#5a7a6a;cursor:pointer;
+  font-family:inherit;white-space:nowrap;transition:.15s;
+}
+.tf-tabs button:hover{color:#1b5e3a;}
+.tf-tabs button.on{background:#fff;color:#1b5e3a;box-shadow:0 2px 6px rgba(0,0,0,.08);font-weight:700;}
+
+.tf-head button#teacherClose{
+  background:#fff;border:1.5px solid #c3d4cb;color:#5a7a6a;
+  border-radius:40px;padding:8px 18px;font-size:0.88rem;
+  cursor:pointer;font-family:inherit;font-weight:600;
+}
+.tf-head button#teacherClose:hover{background:#eef4f1;}
+
+.tf-bar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:#fff;border:1.5px solid #dce5e0;border-radius:18px;
+  padding:12px 16px;margin-bottom:14px;
+}
+.tf-bar label{font-size:0.86rem;color:#1b5e3a;font-weight:700;}
+.tf-bar input,.tf-bar select{
+  padding:8px 13px;border:1.5px solid #bdd3c6;border-radius:40px;
+  font-size:0.88rem;outline:none;font-family:inherit;background:#fff;
+}
+.tf-bar input:focus{border-color:#1b5e3a;}
+
+/* 概览统计卡 */
+.tf-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-bottom:14px;}
+.tf-stat{background:#fff;border:1.5px solid #dce5e0;border-radius:16px;padding:12px 14px;text-align:center;}
+.tf-stat .n{font-size:1.7rem;font-weight:800;color:#1b5e3a;line-height:1.2;}
+.tf-stat .n.g{color:#16a085;} .tf-stat .n.o{color:#cc6b2c;} .tf-stat .n.r{color:#b13e3e;}
+.tf-stat .l{font-size:0.76rem;color:#5a7a6a;margin-top:3px;}
+
+/* 分区内容：一次只显示一个 */
+.tf-pane{display:none;}
+.tf-pane.on{display:block;}
+
+/* 学生卡片 */
+.tf-out{max-height:none;}
+.t-stu{
+  background:#fff;border:1.5px solid #dce5e0;border-radius:20px;
+  padding:14px 16px;margin-bottom:12px;
+}
+.t-stu-h{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;margin-bottom:10px;
+  padding-bottom:9px;border-bottom:1.5px solid #eef3f0;
+}
+.t-stu-n{font-size:1rem;font-weight:800;color:#1a2e24;}
+.t-stu-n small{font-size:0.76rem;font-weight:600;color:#8aa093;margin-left:8px;}
+.t-stu-h .tf-mini{display:flex;gap:6px;flex-wrap:wrap;}
+.tf-chip{font-size:0.72rem;font-weight:700;padding:2px 10px;border-radius:20px;background:#eef4f1;color:#3d6b53;}
+.tf-chip.sp{background:#e6f0fb;color:#2b7de9;}
+.tf-chip.wr{background:#fdf0e8;color:#cc6b2c;}
+.tf-chip.ls{background:#f3ecfa;color:#8e44ad;}
+.tf-chip.rd{background:#e8f6f2;color:#16a085;}
+.t-line{font-size:0.82rem;color:#2d4d3a;padding:4px 0;line-height:1.65;}
+.t-date{font-weight:800;color:#8a5a00;}
+.t-mod{font-weight:700;color:#1b5e3a;}
+.t-wrong{color:#b13e3e;font-size:0.95em;}
+
+/* 分区辅助 */
+.tf-note{font-size:0.84rem;color:#5a7a6a;background:#eef4f1;border-radius:10px;padding:9px 13px;margin-bottom:10px;}
+
+/* 学生名单 */
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:9px;}
+.roster-row{background:#fff;border:1.5px solid #dce5e0;border-radius:14px;padding:11px 13px;cursor:pointer;transition:.15s;}
+.roster-row:hover{border-color:#1b5e3a;background:#f6faf7;box-shadow:0 2px 8px rgba(27,94,58,.08);}
+.roster-n{font-size:.95rem;font-weight:800;color:#1a2e24;margin-bottom:4px;}
+.roster-d{font-size:.76rem;color:#5a7a6a;margin-bottom:7px;line-height:1.5;}
+.roster-m{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* 高频错词 */
+.wrong-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;}
+.wrong-chip{background:#fff;border:1.3px solid #e2eae6;border-left:4px solid #b9c9c0;border-radius:12px;padding:9px 12px;}
+.wrong-chip.hot{border-left-color:#b13e3e;background:#fffafa;}
+.wrong-chip b{display:block;font-size:.9rem;color:#1a2e24;font-weight:700;margin-bottom:3px;word-break:break-word;}
+.wrong-chip.hot b{color:#b13e3e;}
+.wrong-chip span{font-size:.72rem;color:#8a9a92;}
+
+/* 云端未连接提示条 */
+.tf-offline{
+  display:none;background:#fff8e6;border:1.5px solid #f0d9a0;
+  border-left:5px solid #e0a83c;border-radius:12px;
+  padding:11px 15px;margin-bottom:12px;
+  font-size:.84rem;color:#7a5a15;line-height:1.7;
+}
+.tf-offline b{color:#b8860b;}
+
+/* ============ 老师端新增组件 ============ */
+.tf-toast{
+  position:fixed;left:50%;top:26px;transform:translateX(-50%);
+  background:#1b5e3a;color:#fff;padding:11px 26px;border-radius:40px;
+  font-size:.9rem;font-weight:600;z-index:100001;opacity:0;
+  transition:opacity .25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.2);
+}
+
+/* 通用条 */
+.shr-bar,.roster-bar,.add-bar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:#fff;border:1.5px solid #dce5e0;border-radius:16px;
+  padding:12px 14px;margin-bottom:12px;
+}
+.shr-bar label,.roster-bar label{font-size:.86rem;color:#1b5e3a;font-weight:700;}
+.shr-bar select,.shr-bar input,.roster-bar input,.add-bar input,.add-bar select{
+  padding:8px 12px;border:1.5px solid #bdd3c6;border-radius:40px;
+  font-size:.86rem;outline:none;font-family:inherit;background:#fff;
+}
+.shr-bar input[type=month]{min-width:130px;}
+
+/* 记录行内操作 */
+.row-ops{display:flex;gap:6px;flex-wrap:wrap;padding:5px 0 8px 14px;}
+.tf-mini{
+  background:#fff;border:1.3px solid #1b5e3a;color:#1b5e3a;
+  border-radius:20px;padding:3px 11px;font-size:.74rem;
+  cursor:pointer;font-family:inherit;font-weight:600;
+}
+.tf-mini:hover{background:#e8f0ec;}
+.tf-mini.warn{border-color:#b13e3e;color:#b13e3e;}
+.tf-mini.warn:hover{background:#fdf0f0;}
+
+/* 作业条目 */
+.hw-item{border-left:3px solid #2b7de9;padding-left:10px !important;}
+.hw-text{font-size:.82rem;color:#2d4d3a;line-height:1.7;margin-top:3px;white-space:pre-wrap;word-break:break-word;}
+.hw-imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-top:7px;}
+.hw-imgs img{width:100%;border-radius:8px;border:1px solid #dce5e0;display:block;}
+
+/* 评语 */
+.cmt{margin-top:7px;background:#fff8e6;border-left:4px solid #f0b429;border-radius:10px;padding:8px 11px;font-size:.84rem;color:#6b5518;line-height:1.7;}
+.cmt.draft{background:#f4f6f5;border-left-color:#b9c4bf;color:#6b7d74;}
+.cmt-row{margin-top:6px;}
+
+/* 名单 */
+.roster-bar input[type=text]{min-width:170px;}
+.tf-del{background:transparent;border:none;cursor:pointer;font-size:.8rem;padding:2px 5px;border-radius:6px;}
+.tf-del:hover{background:#fdf0f0;}
+
+/* 分享 */
+.shr-preview{margin-bottom:12px;}
+.pv-card{
+  background:linear-gradient(135deg,#1b5e3a,#2e7d52);border-radius:20px;
+  padding:22px 20px;color:#fff;text-align:center;box-shadow:0 8px 22px rgba(27,94,58,.22);
+}
+.pv-name{font-size:1.28rem;font-weight:800;letter-spacing:.5px;}
+.pv-range{display:inline-block;margin-top:10px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:4px 15px;font-size:.86rem;font-weight:600;letter-spacing:1px;}
+.pv-hint{margin-top:12px;font-size:.78rem;color:rgba(255,255,255,.85);}
+
+.gen-box{background:#fff;border:2px solid #1b5e3a;border-radius:16px;padding:16px 18px;}
+.gen-ok{font-size:.9rem;font-weight:800;color:#1b5e3a;margin-bottom:8px;}
+.gen-url{font-size:.8rem;color:#5a7a6a;background:#f4f8f5;border-radius:10px;padding:9px 12px;word-break:break-all;line-height:1.6;margin-bottom:10px;}
+.gen-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.qr-box{text-align:center;background:#fff;border:1.5px solid #dce5e0;border-radius:14px;padding:14px;display:inline-block;}
+.qr-box img{display:block;width:220px;height:220px;max-width:100%;}
+.qr-fallback{font-size:.84rem;color:#b13e3e;padding:10px;}
+
+.his-list{display:grid;gap:8px;}
+.his-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff;border:1.3px solid #dce5e0;border-radius:14px;padding:10px 13px;}
+.his-n{font-size:.88rem;font-weight:700;color:#1a2e24;}
+.his-n small{font-weight:500;color:#8aa093;margin-left:8px;font-size:.76rem;}
+.his-ops{display:flex;gap:6px;flex-wrap:wrap;}
+
+/* 打卡日历 */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:#fff;border:1.5px solid #dce5e0;border-radius:16px;padding:12px;margin-bottom:10px;}
+.cal-grid .cal-wd{text-align:center;font-size:.72rem;color:#8aa093;font-weight:700;padding-bottom:4px;}
+.cal-grid .cc{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:.8rem;background:#f4f6f5;color:#b9c4bf;cursor:pointer;}
+.cal-grid .cc.has{background:#d7ece1;color:#1b5e3a;font-weight:800;}
+.cal-grid .cc.today{outline:2px solid #1b5e3a;outline-offset:1px;}
+.cal-grid .cc.empty{background:transparent;cursor:default;}
+.cal-grid .legend{grid-column:1/-1;}
+
+.day-box{background:#fff;border:1.5px solid #dce5e0;border-radius:16px;padding:14px 16px;}
+.day-h{font-size:.9rem;font-weight:800;color:#1b5e3a;margin-bottom:10px;}
+.day-sub{padding:9px 0;border-bottom:1px dashed #e6ece9;}
+.day-sub:last-child{border-bottom:none;}
+.day-sub-n{display:inline-block;font-size:.72rem;font-weight:800;color:#fff;background:#1b5e3a;padding:2px 10px;border-radius:20px;margin-bottom:5px;}
+.day-sub-t{font-size:.85rem;color:#2d4d3a;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+
+@media (max-width:820px){
+  .shr-bar,.roster-bar,.add-bar{gap:6px;}
+  .qr-box img{width:180px;height:180px;}
+}

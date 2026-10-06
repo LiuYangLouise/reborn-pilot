@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>作业完成情况</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;
+    background:#f2f6f3;min-height:100vh;padding:18px 14px 44px;color:#1a2e24;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  .hero{background:linear-gradient(135deg,#1b5e3a,#2e7d52);border-radius:24px;padding:26px 20px 22px;color:#fff;margin-bottom:16px;box-shadow:0 8px 24px rgba(27,94,58,.22);}
+  .hero h1{font-size:1.5rem;font-weight:800;letter-spacing:.5px;line-height:1.4;word-break:break-word;}
+  .range{display:inline-block;margin-top:12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 16px;font-size:.9rem;font-weight:600;letter-spacing:1px;}
+
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .kpi{background:#fff;border-radius:18px;padding:16px 10px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06);}
+  .kpi .n{font-size:1.9rem;font-weight:800;color:#1b5e3a;line-height:1.2;}
+  .kpi .n.g{color:#16a085;} .kpi .n.o{color:#cc6b2c;}
+  .kpi .l{font-size:.76rem;color:#7a8f84;margin-top:2px;}
+
+  .card{background:#fff;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .card-t{font-size:.95rem;font-weight:800;color:#1b5e3a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+  .card-t small{font-size:.75rem;color:#8aa093;font-weight:600;}
+
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal .wd{text-align:center;font-size:.7rem;color:#8aa093;font-weight:700;padding-bottom:4px;}
+  .cal .d{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:.78rem;background:#f4f6f5;color:#b9c4bf;}
+  .cal .d.has{background:#d7ece1;color:#1b5e3a;font-weight:800;}
+  .cal .d.today{outline:2px solid #1b5e3a;outline-offset:1px;}
+  .cal .d.empty{background:transparent;}
+
+  .legend{display:flex;gap:14px;justify-content:center;margin-top:12px;font-size:.74rem;color:#7a8f84;}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
+
+  .day{background:#fbfdfc;border:1.5px solid #e2eae6;border-radius:16px;padding:14px;margin-bottom:10px;}
+  .day-h{font-size:.88rem;font-weight:800;color:#1b5e3a;margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+  .sub{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed #e6ece9;}
+  .sub:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .sub-n{display:inline-block;font-size:.7rem;font-weight:800;color:#fff;background:#1b5e3a;padding:2px 10px;border-radius:20px;margin-bottom:6px;}
+  .sub-t{font-size:.88rem;color:#2d4d3a;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+  .sub-img{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-top:8px;}
+  .sub-img img{width:100%;border-radius:10px;border:1px solid #dce5e0;cursor:zoom-in;display:block;}
+
+  .cmt{margin-top:9px;background:#fff8e6;border-left:4px solid #f0b429;border-radius:10px;padding:10px 12px;}
+  .cmt .cl{font-size:.7rem;font-weight:800;color:#a67c00;margin-bottom:4px;}
+  .cmt .cv{font-size:.87rem;color:#6b5518;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+
+  .nocmt{margin-top:9px;background:#f7f9f8;border-left:4px solid #c9d5ce;border-radius:10px;padding:8px 12px;}
+  .nocmt .cl{font-size:.7rem;color:#9aa8a1;font-weight:700;}
+
+  .empty{text-align:center;padding:44px 20px;color:#8aa093;}
+  .empty .ic{font-size:2.6rem;margin-bottom:12px;}
+  .foot{text-align:center;font-size:.74rem;color:#a8b8b0;margin-top:22px;line-height:1.8;}
+
+  .mask{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:99;padding:16px;cursor:zoom-out;}
+  .mask.show{display:flex;}
+  .mask img{max-width:94%;max-height:88%;border-radius:10px;}
+
+  @media(max-width:420px){
+    .hero h1{font-size:1.2rem;}
+    .kpi .n{font-size:1.5rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="empty" id="loading"><div class="ic">⏳</div>正在加载…</div>
+</div>
+<div class="mask" id="mask"><img id="maskImg" src="" alt=""></div>
+
+<script src="rb-cloud-v2.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var WD = ['日','一','二','三','四','五','六'];
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function fmtD(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function parseD(s){ return new Date(s+'T00:00:00'); }
+  function mdShort(s){ var d=parseD(s); return pad(d.getMonth()+1)+'.'+pad(d.getDate()); }
+  function mdFull(s){ var d=parseD(s); return (d.getMonth()+1)+'月'+d.getDate()+'日 周'+WD[d.getDay()]; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  // 同时兼容 ?c=xxx、?code=xxx 和 #xxx 三种形式
+  var _sp = new URLSearchParams(location.search);
+  var code = _sp.get('c') || _sp.get('code') || location.hash.replace('#','');
+  if(!code){ $('wrap').innerHTML = '<div class="empty"><div class="ic">🔗</div>链接无效</div>'; return; }
+
+  $('mask').addEventListener('click', function(){ this.classList.remove('show'); });
+
+  RBCloud.Share.byCode(code).then(function(link){
+    if(!link){ $('wrap').innerHTML='<div class="empty"><div class="ic">🔗</div>链接无效或已失效</div>'; return; }
+    return Promise.all([
+      RBCloud.Homework.forRange(link.student_name, link.start_day, link.end_day),
+      RBCloud.PracticeLogs.list({ name: link.student_name, start: link.start_day, end: link.end_day, allNames: true })
+    ]).then(function(res){
+      render(link, res[0] || [], res[1] || []);
+    });
+  }).catch(function(e){
+    $('wrap').innerHTML = '<div class="empty"><div class="ic">⚠️</div>加载失败：'+esc(e.message||e)+'</div>';
+  });
+
+  function render(link, hw, logs){
+    document.title = link.student_name + ' 作业完成情况';
+    var days = daysBetween(link.start_day, link.end_day);
+    var checked = Object.keys(groupByDay(hw)).length;
+
+    var html = '';
+    html += '<div class="hero"><h1>'+esc(link.student_name)+'作业完成情况</h1>'+
+            '<div class="range">'+mdShort(link.start_day)+' - '+mdShort(link.end_day)+'</div></div>';
+
+    html += '<div class="kpis">'+
+      '<div class="kpi"><div class="n">'+days+'</div><div class="l">统计天数</div></div>'+
+      '<div class="kpi"><div class="n g">'+checked+'</div><div class="l">已打卡</div></div>'+
+      '<div class="kpi"><div class="n o">'+(days-checked)+'</div><div class="l">未打卡</div></div>'+
+    '</div>';
+
+    // 日历
+    var byDay = groupByDay(hw);
+    html += '<div class="card"><div class="card-t">📅 打卡日历<small>'+mdShort(link.start_day)+' - '+mdShort(link.end_day)+'</small></div>';
+    html += '<div class="cal">';
+    WD.forEach(function(w){ html += '<div class="wd">'+w+'</div>'; });
+    var first = parseD(link.start_day);
+    var lead = (first.getDay()+6)%7;
+    for(var i=0;i<lead;i++) html += '<div class="d empty"></div>';
+    var todayStr = fmtD(new Date());
+    for(var d=1; d<=days; d++){
+      var cur = new Date(first.getFullYear(), first.getMonth(), first.getDate()+d-1);
+      var ds = fmtD(cur);
+      var has = !!byDay[ds];
+      html += '<div class="d'+(has?' has':'')+(ds===todayStr?' today':'')+'">'+d+'</div>';
+    }
+    html += '</div>';
+    html += '<div class="legend"><span><i style="background:#d7ece1"></i>已提交</span><span><i style="background:#f4f6f5"></i>未打卡</span></div>';
+    html += '</div>';
+
+    // 每日明细
+    html += '<div class="card"><div class="card-t">📝 每日明细<small>共 '+checked+' 天</small></div>';
+    var dates = Object.keys(byDay).sort().reverse();
+    if(!dates.length){
+      html += '<div style="text-align:center;color:#8aa093;padding:22px 0;font-size:.88rem;">该日期段暂无打卡记录</div>';
+    } else {
+      dates.forEach(function(ds){
+        var rows = byDay[ds];
+        html += '<div class="day"><div class="day-h">📌 '+mdFull(ds)+'</div>';
+        rows.forEach(function(r){
+          var imgs = parseImgs(r.images);
+          html += '<div class="sub"><span class="sub-n">'+esc(r.subject)+'</span>';
+          if(r.text_content) html += '<div class="sub-t">'+esc(r.text_content)+'</div>';
+          if(imgs.length){
+            html += '<div class="sub-img">'+imgs.map(function(src){
+              return '<img src="'+esc(src)+'" alt="">';
+            }).join('')+'</div>';
+          }
+          if(!r.text_content && !imgs.length) html += '<div class="sub-t" style="color:#a8b8b0;">（未填写内容）</div>';
+          html += '</div>';
+        });
+        // 评语：只显示已提交的
+        rows.forEach(function(r){
+          if(r.comment_submitted && r.teacher_comment && String(r.teacher_comment).trim()){
+            html += '<div class="cmt"><div class="cl">💬 '+esc(r.subject)+' 老师评语</div><div class="cv">'+esc(r.teacher_comment)+'</div></div>';
+          }
+        });
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+    // 练习记录（如果有）
+    if(logs.length){
+      var lg = groupByDay(logs.map(function(l){ return { record_date:l.record_date, module:l.module, detail:l.detail, score:l.score_text }; }));
+      html += '<div class="card"><div class="card-t">🎯 练习记录<small>共 '+logs.length+' 次</small></div>';
+      Object.keys(lg).sort().reverse().forEach(function(ds){
+        html += '<div class="day"><div class="day-h">📌 '+mdFull(ds)+'</div>';
+        lg[ds].forEach(function(r){
+          html += '<div class="sub"><span class="sub-n">'+esc(r.module)+'</span>'+
+                  '<div class="sub-t">'+esc(r.detail||'')+(r.score?'　<b>'+esc(r.score)+'</b>':'')+'</div></div>';
+        });
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '<div class="foot">🌟 Reborn新生留学 · 只读链接，家长仅可查看<br>学生之后补交作业，本页刷新即可看到最新内容</div>';
+
+    $('wrap').innerHTML = html;
+    bindImgs();
+  }
+
+  function parseImgs(s){
+    if(!s) return [];
+    try { var a = JSON.parse(s); return Array.isArray(a) ? a : []; } catch(e){ return []; }
+  }
+  function groupByDay(rows){
+    var m = {};
+    rows.forEach(function(r){ var d = r.record_date; (m[d] = m[d] || []).push(r); });
+    return m;
+  }
+  function daysBetween(a, b){
+    var d1 = parseD(a), d2 = parseD(b);
+    return Math.round((d2 - d1) / 86400000) + 1;
+  }
+  function bindImgs(){
+    Array.prototype.forEach.call(document.querySelectorAll('.sub-img img'), function(img){
+      img.addEventListener('click', function(){
+        $('maskImg').src = img.src;
+        $('mask').classList.add('show');
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

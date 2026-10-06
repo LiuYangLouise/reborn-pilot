@@ -1085,6 +1085,178 @@ $('viewBtn').addEventListener('click', ()=>{
   }
 });
 
+let lastQueryDates=null, lastQueryRange=null;
+
+$('queryBtn').addEventListener('click', async ()=>{
+  const s=$('startDate').value, e=$('endDate').value;
+  if(!s||!e){ showToast('请选择开始和结束日期'); return; }
+  if(s>e){ showToast('开始日期不能晚于结束日期'); return; }
+
+  // 先同步云端作业记录（学生在别的设备提交的也能导出）
+  const btnQ=$('queryBtn'); const oldTxt=btnQ.textContent;
+  btnQ.textContent='⏳ 同步中…'; btnQ.disabled=true;
+  if(window.PracticeSync && PracticeSync.refresh){
+    try{ await PracticeSync.refresh(state.name ? {name:state.name} : {}); }catch(e){}
+  }
+  // 合并云端作业到本地 state.records（按天+科目覆盖）
+  try{
+    if(window.RBCloud && RBCloud.Homework && state.name){
+      const rows = await RBCloud.Homework.forRange(state.name, s, e);
+      rows.forEach(r=>{
+        if(!r.record_date || !r.subject) return;
+        if(!state.records[r.record_date]) state.records[r.record_date] = {};
+        let imgs = [];
+        try{ imgs = r.images ? JSON.parse(r.images) : []; }catch(e){}
+        state.records[r.record_date][r.subject] = {
+          text: r.text_content || '',
+          imgs: Array.isArray(imgs) ? imgs : []
+        };
+      });
+      if(rows.length) saveStore();
+    }
+  }catch(e){ /* 云端不可用时仅用本地 */ }
+  btnQ.textContent=oldTxt; btnQ.disabled=false;
+
+  const dates=Object.keys(state.records).filter(d=>d>=s&&d<=e).sort();
+  const box=$('recordResult');
+  if(dates.length===0){
+    box.innerHTML='<div style="color:#999;font-size:0.9rem;padding:10px 0;">该日期段暂无打卡记录</div>';
+    $('pdfBtn').style.display='none';
+    return;
+  }
+  let hasImg=false;
+  box.innerHTML = dates.map(d=>{
+    const rec=state.records[d];
+    const dd=new Date(d+'T00:00:00');
+    const items = SUBJECTS.map(sub=>{
+      const item=rec[sub];
+      if(!item || (!item.text && item.imgs.length)) return '';
+      let html=`<div class="rd-item"><b>${sub}</b>${item.text?escapeHtml(item.text).replace(/\n/g,'<br>'):''}`;
+      if(item.imgs.length){
+        hasImg=true;
+        html += `<div class="rd-imgs">` + item.imgs.map(src=>`<img src="${src}" alt="">`).join('') + `</div>`;
+      }
+      html += `</div>`;
+      return html;
+    }).join('');
+    return `<div class="record-day"><div class="rd-title">${fmtCN(dd)}</div>${items}</div>`;
+  }).join('');
+  box.querySelectorAll('.rd-imgs img').forEach(img=>{
+    img.addEventListener('click',()=>previewImg(img.src));
+  });
+  lastQueryDates=dates; lastQueryRange={s,e};
+  $('pdfBtn').style.display = 'inline-block';   // 始终可导：有图带图，无图导文字
+  exportTxt(dates, s, e);
+  if(hasImg) showToast('📄 可点「导出带图作业」生成 PDF');
+});
+
+function exportTxt(dates, s, e){
+  const name = state.name || '学生';
+  let txt = `Reborn ${name}的作业统计\n日期段：${s} 至 ${e}\n生成时间：${fmtCN(new Date())}\n`;
+  txt += '='.repeat(40) + '\n\n';
+  dates.forEach(d=>{
+    const rec=state.records[d];
+    const dd=new Date(d+'T00:00:00');
+    txt += `【${fmtCN(dd)}】\n`;
+    SUBJECTS.forEach(sub=>{
+      const item=rec[sub];
+      if(!item) return;
+      if(item.text) txt += `  ${sub}：${item.text}\n`;
+      if(item.imgs && item.imgs.length){
+        if(!item.text) txt += `  ${sub}：\n`;
+        txt += `　　（需补充配图）\n`;
+      }
+    });
+    txt += '\n';
+  });
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`Reborn ${name}的作业统计 ${s}至${e}.txt`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  showToast('📥 已导出 txt');
+}
+
+$('pdfBtn').addEventListener('click', ()=>{
+  if(!lastQueryDates){ showToast('请先查询'); return; }
+  const name=state.name||'学生';
+  const s=lastQueryRange.s, e=lastQueryRange.e;
+  let body='';
+  lastQueryDates.forEach(d=>{
+    const rec=state.records[d];
+    const dd=new Date(d+'T00:00:00');
+    body += `<div class="pdf-day"><div class="pdf-day-title">${fmtCN(dd)}</div>`;
+    SUBJECTS.forEach(sub=>{
+      const item=rec[sub];
+      if(!item || (!item.text && !item.imgs.length)) return;
+      body += `<div class="pdf-subject">`;
+      body += `<div class="pdf-sub-name">${sub}</div>`;
+      body += `<div class="pdf-sub-body">`;
+      if(item.text) body += `<div class="pdf-text">${escapeHtml(item.text).replace(/\n/g,'<br>')}</div>`;
+      if(item.imgs.length){
+        body += `<div class="pdf-imgs">` + item.imgs.map(src=>`<img src="${src}">`).join('') + `</div>`;
+      }
+      body += `</div></div>`;
+    });
+    body += `</div>`;
+  });
+  const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+  <title>Reborn ${name}的作业统计 ${s}至${e}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,'Segoe UI',Roboto,'Microsoft YaHei',sans-serif;}
+    body{background:#f5f7fa;padding:24px;color:#1a2e24;}
+    .pdf-wrap{max-width:800px;margin:0 auto;background:white;border-radius:20px;padding:28px 32px;box-shadow:0 10px 40px rgba(0,20,30,0.1);}
+    .pdf-header{text-align:center;padding:14px;border-radius:40px;background:#1b5e3a;color:white;margin-bottom:20px;}
+    .pdf-header .t1{font-size:1.3rem;font-weight:700;}
+    .pdf-header .t2{font-size:0.85rem;color:#e6f0ea;margin-top:3px;}
+    .pdf-meta{font-size:0.85rem;color:#5a7a6a;margin-bottom:16px;text-align:center;}
+    .pdf-day{margin-bottom:18px;break-inside:avoid;page-break-inside:avoid;}
+    .pdf-day-title{font-size:1rem;font-weight:700;color:#1b5e3a;padding-bottom:6px;border-bottom:2px solid #e8f0ec;margin-bottom:10px;}
+    .pdf-subject{display:flex;gap:10px;margin-bottom:10px;break-inside:avoid;page-break-inside:avoid;background:#f8fafc;border:1px solid #dce5e0;border-radius:12px;padding:10px 12px;}
+    .pdf-sub-name{flex-shrink:0;width:48px;font-size:0.85rem;font-weight:700;color:#8a5a00;background:#fdf0cc;border:1px solid #f2d98a;border-radius:8px;padding:4px 0;text-align:center;height:fit-content;}
+    .pdf-sub-body{flex:1;min-width:0;}
+    .pdf-text{font-size:0.88rem;line-height:1.7;margin-bottom:6px;}
+    .pdf-imgs{display:block;margin-top:8px;}
+    .pdf-imgs img{
+      display:block;
+      width:100%;
+      max-width:100%;
+      height:auto;
+      border-radius:8px;
+      border:1px solid #dce5e0;
+      margin-bottom:14px;
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .pdf-tip{text-align:center;font-size:0.82rem;color:#b13e3e;margin:14px 0;background:#fdf0f0;padding:10px;border-radius:10px;}
+    @media print{
+      body{background:white;padding:0;}
+      .pdf-wrap{box-shadow:none;border-radius:0;max-width:100%;padding:12px;}
+      .pdf-imgs img{break-inside:avoid;page-break-inside:avoid;}
+      .pdf-tip{display:none;}
+      .pdf-header{background:#1b5e3a !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .pdf-sub-name{background:#fdf0cc !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .pdf-subject{background:#f8fafc !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .pdf-day{break-inside:avoid;page-break-inside:avoid;}
+      .pdf-subject{break-inside:avoid;page-break-inside:avoid;}
+    }
+  </style></head><body>
+  <div class="pdf-wrap">
+    <div class="pdf-header"><div class="t1">Reborn新生留学 · 每日作业打卡</div><div class="t2">${name} 的作业统计</div></div>
+    <div class="pdf-meta">日期段：${s} 至 ${e} ｜ 生成时间：${fmtCN(new Date())}</div>
+    <div class="pdf-tip">💡 请在弹出的打印窗口中选择「另存为 PDF」保存文件</div>
+    ${body}
+  </div>
+  <script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script>
+  </body></html>`;
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+});
+
+
 buildSubjectForm();
 renderStatBadge();
 loadStore();

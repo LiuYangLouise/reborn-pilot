@@ -751,6 +751,7 @@ function syncSpeakingSummary(){
   const fullText = lines.join('\n');
 
   PracticeSync.logReplace('口语', {
+    slot: '自主',
     topic: Array.from(topicSet).filter(Boolean).join('、'),
     subType: '自主练习',
     detail: fullText,

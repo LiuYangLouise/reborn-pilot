@@ -25,8 +25,8 @@
 
   // 本应用自己的云服务（同源，不会被跨域拦）
   // 旧站（GitHub Pages）跨域受限，改用同源相对路径；失败时自动降级为仅本地
-  var ENDPOINT = '';
-  var KEY = '';
+  var ENDPOINT = 'https://homework-checkin-70500.app.workbuddy.host';
+  var KEY = 'wbpk_325IYB8GtzBwhF8xHc8JJB_feev6L4HzrliZFD6MAlHaVk1IWE6stvH';
   var LS_KEY = 'rb_practice_log_v2';
 
   var _cloud = null;

@@ -541,7 +541,8 @@
                                               .map(function(r){return r.word;});
                         var skipWords = errors.filter(function(r){return r.status==='skipped';})
                                               .map(function(r){return r.word + '(未答)';});
-                        PracticeSync.log('词汇', {
+                        PracticeSync.logReplace('词汇', {
+                            slot: /vocab-4k|4000/.test(location.search) ? '4000必刷词' : '听力默写',
                             topic: unitList.map(function(u){ return u.id + ' ' + u.name; }).join('、'),
                             subType: '听力默写',
                             detail: vFull,

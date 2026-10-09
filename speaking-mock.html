@@ -1578,7 +1578,8 @@
                 mL.push('合计：录音 ' + recN + ' 条　求助 ' + (examState.pardonCount || 0) + ' 次');
                 var mFull = mL.join('\n');
 
-                PracticeSync.log('口语', {
+                PracticeSync.logReplace('口语', {
+                        slot: '模拟考',
                         topic: topic,
                         subType: '全真模拟考',
                         detail: mFull,

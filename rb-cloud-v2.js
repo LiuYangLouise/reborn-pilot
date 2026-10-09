@@ -13,8 +13,8 @@
 (function (global) {
   'use strict';
 
-  var ENDPOINT = '';
-  var KEY = '';
+  var ENDPOINT = 'https://homework-checkin-70500.app.workbuddy.host';
+  var KEY = 'wbpk_325IYB8GtzBwhF8xHc8JJB_feev6L4HzrliZFD6MAlHaVk1IWE6stvH';
   var SDK_URL = 'https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js';
 
   var _cloud = null;
